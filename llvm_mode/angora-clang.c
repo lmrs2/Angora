@@ -187,6 +187,59 @@ static void add_dfsan_pass() {
   }
 }
 
+/* Execute command and get output */
+
+static void exec_command(const u8 * cmd, u8 * output, size_t olen) {
+
+  if ( !(output && olen) ) {
+    FATAL("Invalid output=%p, olen=%zu", output, olen);
+  }
+
+  FILE * fp = NULL;
+  size_t len = 0, pos = 0;
+  char * line = NULL;
+  ssize_t nread = 0;
+
+  /* Open the command for reading. */
+  if ( (fp = popen(cmd, "r")) == NULL) {
+    FATAL("Failed to run command %s", cmd);
+  }
+
+  /* Read the output a line at a time */
+  while ( (nread=getline(&line, &len, fp)) != -1) {
+    
+    /* olen must be greater than pos */
+    if ( !(olen >= pos) ) {
+      FATAL("exec_command: output buffer too small");
+    }
+
+    /* space left must be greater than what we copy */
+    if ( !(nread <= (olen-pos)) ) {
+      FATAL("exec_command: output buffer too small");
+    }
+
+    memcpy(&output[pos], line, nread);
+    pos += nread;
+    line = NULL;
+    len = 0;
+  }
+
+  if ( !(pos < olen) ) {
+    FATAL("exec_command: output buffer too small");
+  }
+  output[pos] = '\0';
+
+  /* remove the last '\n' */
+  if ( pos && output[pos-1] == '\n' ) {
+    output[pos-1] = '\0';
+  }
+  
+  /* cleanup */
+  free(line);
+  pclose(fp);
+
+}
+
 static void edit_params(u32 argc, char **argv) {
 
   u8 fortify_set = 0, asan_set = 0, x_set = 0, maybe_linking = 1, bit_mode = 0;
@@ -200,14 +253,37 @@ static void edit_params(u32 argc, char **argv) {
   else
     name++;
   check_type(name);
-
+  
   if (is_cxx) {
     u8 *alt_cxx = getenv("ANGORA_CXX");
-    cc_params[0] = alt_cxx ? alt_cxx : (u8 *)"clang++";
+    if (alt_cxx) {
+      cc_params[0] = alt_cxx;
+    }     
   } else {
     u8 *alt_cc = getenv("ANGORA_CC");
-    cc_params[0] = alt_cc ? alt_cc : (u8 *)"clang";
+    if (alt_cc) {
+      cc_params[0] = alt_cc;
+    }
   }
+
+  /* If an alternative compiler was not given, use llvm-config instead */
+  if (!cc_params[0]) {
+    u8 * llvm_config = getenv("LLVM_CONFIG");
+    if (!llvm_config) {
+      FATAL("LLVM_CONFIG not defined");
+    }
+
+    u8 llvm_bindir[1024] = "\0";
+    u8 * cmd = alloc_printf("%s --bindir", llvm_config);
+    exec_command(cmd, llvm_bindir, sizeof(llvm_bindir));
+    if ( !strcmp(name, "angora-clang++") ) {
+      cc_params[0] = alloc_printf("%s/clang++", llvm_bindir);
+    } else if ( !strcmp(name, "angora-clang") ) {
+      cc_params[0] = alloc_printf("%s/clang", llvm_bindir);
+    }
+    ck_free(cmd);
+  }
+
   /* Detect stray -v calls from ./configure scripts. */
   if (argc == 1 && !strcmp(argv[1], "-v"))
     maybe_linking = 0;

@@ -41,8 +41,8 @@ endif
 # probably better.
 
 ifeq "$(origin CC)" "default"
-  CC         = clang
-  CXX        = clang++
+  CC         = `$(LLVM_CONFIG) --bindir`/clang
+  CXX        = `$(LLVM_CONFIG) --bindir`/clang++
 endif
 
 CHCEK_VERSION="4.0"

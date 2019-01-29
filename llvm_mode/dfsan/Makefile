@@ -1,6 +1,6 @@
 PREFIX      ?= ../../bin/
 CC         = clang
-CXX        = clang++
+CXX        = `$(LLVM_CONFIG) --bindir`/clang++
 AR         = ar
 LLVM_CONFIG ?= ${LLVM_DIR}llvm-config
 CXXFLAGS    += -std=c++14 -Wall -fpic -O3 -g

@@ -3,6 +3,7 @@ use std::{
     path::{Path, PathBuf},
     process::Command,
 };
+use std::env;
 
 static TMP_DIR: &str = "tmp";
 static INPUT_FILE: &str = "cur_input";
@@ -42,7 +43,6 @@ impl CommandOpt {
     ) -> Self {
         let tmp_dir = out_dir.join(TMP_DIR);
         tmpfs::create_tmpfs_dir(&tmp_dir);
-
         let out_file = tmp_dir.join(INPUT_FILE).to_str().unwrap().to_owned();
         let forksrv_socket_path = tmp_dir
             .join(FORKSRV_SOCKET_FILE)
@@ -51,14 +51,19 @@ impl CommandOpt {
             .to_owned();
 
         let track_path = tmp_dir.join(TRACK_FILE).to_str().unwrap().to_owned();
-
         let has_input_arg = pargs.contains(&"@@".to_string());
-
-        let clang_lib = Command::new("llvm-config")
+        let llvm_config = match env::var("LLVM_CONFIG") {
+            Ok(val) => val,
+            Err(e) => { 
+                error!("LLVM_CONFIG env: {:?}", e);
+                panic!();
+            }
+        };
+        let clang_lib = Command::new(llvm_config)
             .arg("--libdir")
             .output()
             .unwrap()
-            .stdout;
+            .stdout;  
         let clang_lib = String::from_utf8(clang_lib).unwrap();
         let ld_library = "$LD_LIBRARY_PATH:".to_string() + clang_lib.trim();
 
