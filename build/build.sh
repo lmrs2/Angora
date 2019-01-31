@@ -66,9 +66,9 @@ PREFIX=./bin
 
 if [ $action = "clean" ]; then
 	cargo clean || exit 255
+	rm -rf $PREFIX 2>/dev/null || exit 255
 	cd llvm_mode || exit 255
 	make clean || exit 255
-	rm -rf $PREFIX 2>/dev/null || exit 255
 	exit 0
 fi
 
