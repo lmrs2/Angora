@@ -52,12 +52,12 @@ fi
 
 # install rustc, etc if needed
 if [ -f "$HOME/.cargo/env" ]; then
-. $HOME/.cargo/env || exit 255
+	. $HOME/.cargo/env || exit 255
 fi
 
 if [ ! -x "$(command -v cargo)" ]; then
-curl https://sh.rustup.rs -sSf | sh  || exit 255
-. $HOME/.cargo/env || exit 255
+	curl https://sh.rustup.rs -sSf | sh  || exit 255
+	. $HOME/.cargo/env || exit 255
 fi
 
 
