@@ -23,7 +23,7 @@ Arxiv: [Angora: Efficient Fuzzing by Principled Search](https://arxiv.org/abs/18
 if you need to compilte C++ programs because we need to compile libcxx with DFSan.
 	```shell
 	cd Angora
-	export CLANG_INSTALLATION=/path/to/Angora/clangllvm
+	export CLANG_INSTALLATION=$PWD/Angora/clangllvm
 	git clone https://github.com/llvm/llvm-project.git -b release/4.x
 	cd llvm-project && mkdir build && cd build
 	cmake -DCMAKE_INSTALL_PREFIX=$CLANG_INSTALLATION -DLLVM_TARGETS_TO_BUILD="X86" -DLLVM_ENABLE_PROJECTS=libcxxabi -DLLVM_ENABLE_PROJECTS=libcxx -DLLVM_ENABLE_PROJECTS=clang -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release ../llvm
