@@ -24,14 +24,22 @@ if [ "$NM" = "" ]; then
     exit 1
 fi
 
-echo "$1" |grep 'so$'
-if [ $? -eq 0 ]
-then
-    # echo "dynamic library.."
-    nm -D --defined-only $1 | grep " T " | sed 's/^[0-9a-z]\+ T /fun:/g; s/$/=uninstrumented/g'
-    nm -D --defined-only $1 | grep " T " | sed "s/^[0-9a-z]\+ T /fun:/g; s/$/=$2/g"
+if [ ! -e "$1" ]; then
+    echo "File '$1' does not exist"
+    exit 255
+fi
+
+FILE=$(realpath $1)
+SHARED_LIB=$(file "$FILE" | grep 'shared object')
+STATIC_LIB=$(file "$FILE" | grep 'ar archive')
+if [ ! -z "$SHARED_LIB" ]; then
+    #echo "dynamic library.."
+    nm -D --defined-only $FILE | grep " T " | sed 's/^[0-9a-z]\+ T /fun:/g; s/$/=uninstrumented/g'
+    nm -D --defined-only $FILE | grep " T " | sed "s/^[0-9a-z]\+ T /fun:/g; s/$/=$2/g"
+elif [ ! -z "$STATIC_LIB" ]; then
+    #echo "static library.."
+    nm --defined-only $FILE | grep " T " | sed 's/^[0-9a-z]\+ T /fun:/g; s/$/=uninstrumented/g'
+    nm --defined-only $FILE | grep " T " | sed "s/^[0-9a-z]\+ T /fun:/g; s/$/=$2/g"
 else
-    # echo "static library.."
-    nm --defined-only $1 | grep " T " | sed 's/^[0-9a-z]\+ T /fun:/g; s/$/=uninstrumented/g'
-    nm --defined-only $1 | grep " T " | sed "s/^[0-9a-z]\+ T /fun:/g; s/$/=$2/g"
+    echo "Invalid file '$1'. Must be static or shared library."
 fi

@@ -27,6 +27,7 @@ pub fn fuzz_main(
     time_limit: u64,
     search_method: &str,
     sync_afl: bool,
+    no_ui: bool,
     enable_afl: bool,
     enable_exploitation: bool,
 ) {
@@ -49,6 +50,7 @@ pub fn fuzz_main(
         search_method,
         mem_limit,
         time_limit,
+        no_ui,
         enable_afl,
         enable_exploitation,
     );
@@ -79,17 +81,13 @@ pub fn fuzz_main(
         &stats,
     );
 
-    let log_file = match fs::File::create(angora_out_dir.join(defs::ANGORA_LOG_FILE)) {
-        Ok(a) => a,
-        Err(e) => {
-            error!("FATAL: Could not create log file: {:?}", e);
-            panic!();
-        }
-    };
+    let log_file = init_stats(&stats, angora_out_dir.join(defs::ANGORA_LOG_FILE));
+   
     main_thread_sync_and_log(
         log_file,
         out_dir,
         sync_afl,
+        no_ui,
         running.clone(),
         &mut executor,
         &depot,
@@ -199,6 +197,7 @@ fn main_thread_sync_and_log(
     mut log_file: fs::File,
     out_dir: &str,
     sync_afl: bool,
+    no_ui: bool,
     running: Arc<AtomicBool>,
     executor: &mut executor::Executor,
     depot: &Arc<depot::Depot>,
@@ -213,7 +212,7 @@ fn main_thread_sync_and_log(
     }
     let mut sync_counter = 1;
     while running.load(Ordering::SeqCst) {
-        show_stats(&mut log_file, depot, global_branches, stats);
+        show_stats(&mut log_file, depot, global_branches, stats, !no_ui);
         thread::sleep(time::Duration::from_secs(5));
         sync_counter -= 1;
         if sync_afl && sync_counter <= 0 {
@@ -226,5 +225,5 @@ fn main_thread_sync_and_log(
             break;
         }
     }
-    show_stats(&mut log_file, depot, global_branches, stats);
+    show_stats(&mut log_file, depot, global_branches, stats, !no_ui);
 }

@@ -120,7 +120,7 @@ impl Branches {
 
     pub fn has_new(&mut self, status: StatusType) -> (bool, bool, usize) {
         let gb_map = match status {
-            StatusType::Normal => &self.global.virgin_branches,
+            StatusType::Normal | StatusType::Import => &self.global.virgin_branches,
             StatusType::Timeout => &self.global.tmouts_branches,
             StatusType::Crash => &self.global.crashes_branches,
             _ => {

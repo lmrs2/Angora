@@ -73,6 +73,10 @@ fn main() {
              .short("E")
              .long("disable_exploitation")
              .help("Disable the fuzzer to mutate sensitive bytes to exploit bugs"))
+        .arg(Arg::with_name("no_ui")
+             .short("N")
+             .long("no_ui")
+             .help("Disable UI stats"))
        .get_matches();
 
     fuzz_main(
@@ -85,6 +89,7 @@ fn main() {
         value_t!(matches, "time_limit", u64).unwrap_or(angora_common::config::TIME_LIMIT),
         matches.value_of("search_method").unwrap_or("gd"),
         matches.occurrences_of("sync_afl") > 0,
+        matches.occurrences_of("no_ui") > 0,
         matches.occurrences_of("disable_afl_mutation") == 0,
         matches.occurrences_of("disable_exploitation") == 0,
     );

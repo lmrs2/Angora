@@ -9,6 +9,7 @@ pub struct LocalStats {
     pub num_inputs: Counter,
     pub num_hangs: Counter,
     pub num_crashes: Counter,
+    pub num_imports: Counter,
 
     pub track_time: TimeDuration,
     pub start_time: TimeIns,
@@ -32,6 +33,7 @@ impl LocalStats {
         self.num_inputs = Default::default();
         self.num_hangs = Default::default();
         self.num_crashes = Default::default();
+        self.num_imports = Default::default();
         self.track_time = Default::default();
     }
 
@@ -45,6 +47,9 @@ impl LocalStats {
             },
             StatusType::Crash => {
                 self.num_crashes.count();
+            },
+            StatusType::Import => {
+                self.num_imports.count();
             },
             _ => {},
         }

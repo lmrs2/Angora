@@ -3,6 +3,7 @@ pub enum StatusType {
     Normal,
     Timeout,
     Crash,
+    Import,
     Skip,
     Error,
 }

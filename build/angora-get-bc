@@ -1,0 +1,20 @@
+#!/bin/sh
+
+LIB_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
+. $LIB_DIR/../library.sh
+
+if [ -z "$LLVM_CONFIG" ]; then
+	fatal "LLVM_CONFIG not defined"
+fi
+
+VERSION=$($LLVM_CONFIG --version)
+VERSION_4=$(echo $VERSION | grep '4\.')
+if [ -z "$VERSION_4" ]; then
+	fatal "LLVM_VERSION points to wrong version:\n${VERSION}\n\nWe need version 4.x"
+fi
+
+CC=`basename $0`
+
+export LLVM_COMPILER_PATH=`$LLVM_CONFIG --bindir`
+
+$LIB_DIR/get-bc "$@"

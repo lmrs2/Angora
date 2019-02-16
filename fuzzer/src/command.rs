@@ -26,6 +26,7 @@ pub struct CommandOpt {
     pub is_raw: bool,
     pub uses_asan: bool,
     pub ld_library: String,
+    pub no_ui: bool,
     pub enable_afl: bool,
     pub enable_exploitation: bool,
 }
@@ -38,6 +39,7 @@ impl CommandOpt {
         search_method: &str,
         mut mem_limit: u64,
         time_limit: u64,
+        no_ui: bool,
         enable_afl: bool,
         enable_exploitation: bool,
     ) -> Self {
@@ -100,6 +102,7 @@ impl CommandOpt {
             uses_asan,
             is_raw: true,
             ld_library,
+            no_ui,
             enable_afl,
             enable_exploitation,
         }

@@ -20,6 +20,7 @@ pub struct Depot {
     pub num_inputs: AtomicUsize,
     pub num_hangs: AtomicUsize,
     pub num_crashes: AtomicUsize,
+    pub num_imports: AtomicUsize,
     pub dirs: DepotDir,
 }
 
@@ -30,6 +31,7 @@ impl Depot {
             num_inputs: AtomicUsize::new(0),
             num_hangs: AtomicUsize::new(0),
             num_crashes: AtomicUsize::new(0),
+            num_imports: AtomicUsize::new(0),
             dirs: DepotDir::new(in_dir, out_dir),
         }
     }
@@ -48,6 +50,7 @@ impl Depot {
             status,
             cmpid
         );
+
         let new_path = get_file_name(dir, id);
         let mut f = fs::File::create(new_path.as_path()).expect("Could not save new input file.");
         f.write_all(buf)
@@ -60,6 +63,9 @@ impl Depot {
         match status {
             StatusType::Normal => {
                 Self::save_input(&status, buf, &self.num_inputs, cmpid, &self.dirs.inputs_dir)
+            },
+            StatusType::Import => {
+                Self::save_input(&status, buf, &self.num_imports, cmpid, &self.dirs.inputs_dir)
             },
             StatusType::Timeout => {
                 Self::save_input(&status, buf, &self.num_hangs, cmpid, &self.dirs.hangs_dir)

@@ -14,7 +14,8 @@ ext_lib:
 	rm -rf ${PREFIX}/libcxx_dfsan
 	mkdir ${PREFIX}/libcxx_dfsan
 	cp libcxx_dfsan/libc++.a ${PREFIX}/libcxx_dfsan
-	cp libcxx_dfsan/libc++abidfsan.a ${PREFIX}/libcxx_dfsan
+	cp libcxx_dfsan/libc++abidfsan.a ${PREFIX}/libcxx_dfsan/libc++abidfsan.a
+	cp libcxx_dfsan/libc++abidfsan.a ${PREFIX}/libcxx_dfsan/libc++abi.a
 
 dfsan_lib:
 	cd dfsan && make

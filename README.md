@@ -7,6 +7,7 @@ Angora is a mutation-based coverage guided fuzzer. The main goal of Angora is
 to increase branch coverage by solving path constraints without symbolic 
 execution. 
 
+Original repo is at [https://github.com/AngoraFuzzer/Angora](https://github.com/AngoraFuzzer/Angora)
 
 ## Published Work
 
@@ -14,20 +15,22 @@ Arxiv: [Angora: Efficient Fuzzing by Principled Search](https://arxiv.org/abs/18
 
 ## Building Angora
 
-### Build Requirements
 
-- Linux-amd64 (Tested on Ubuntu 16.04/18.04 and Debian Buster)
-- Rust stable, can be obtained using [rustup](https://rustup.rs)
-- [LLVM 4.0.0](http://llvm.org/docs/index.html) : run `PREFIX=/path-to-install ./build/llvm.sh`.
+### Installation
 
-### Environment Variables
-
-Append the following entries in the shell configuration file (`~/.bashrc`, `~/.zshrc`).
-
-```
-export PATH=/path-to-clang/bin:$PATH
-export LD_LIBRARY_PATH=/path-to-clang/lib:$LD_LIBRARY_PATH
-```
+- Linux-amd64 (Tested on Ubuntu 14.04/16.04/18.04 and Debian Buster)
+- [Clang/LLVM 4.0.0](http://llvm.org/docs/index.html). Do *not* install it from your distribution, it will be problematic
+if you need to compilte C++ programs because we need to compile libcxx with DFSan.
+	```shell
+	cd Angora
+	export CLANG_INSTALLATION=/path/to/Angora/clangllvm
+	git clone https://github.com/llvm/llvm-project.git -b release/4.x
+	cd llvm-project && mkdir build && cd build
+	cmake -DCMAKE_INSTALL_PREFIX=$CLANG_INSTALLATION -DLLVM_TARGETS_TO_BUILD="X86" -DLLVM_ENABLE_PROJECTS=libcxxabi -DLLVM_ENABLE_PROJECTS=libcxx -DLLVM_ENABLE_PROJECTS=clang -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release ../llvm
+	make install
+	```
+- [gclang](https://github.com/SRI-CSL/gllvm). Installed automatically by installation script -- see below.
+- [rustup](https://rustup.rs). Installed automatically by installation script -- see below.
 
 ### Fuzzer Compilation
 
@@ -35,7 +38,14 @@ The build script will resolve most dependencies and setup the
 runtime environment.
 
 ```shell
-./build/build.sh
+export LLVM_CONFIG=$CLANG_INSTALLATION/bin/llvm-config
+./build/build.sh make
+```
+
+To clean:
+
+```shell
+./build/build.sh clean
 ```
 
 ### System Configuration
@@ -45,6 +55,10 @@ As with AFL, system core dumps must be disabled.
 ```shell
 echo core | sudo tee /proc/sys/kernel/core_pattern
 ```
+Also make sure ulimit -s is *not* set to unlimited, as this crashes the binary.track:
+```shell
+ulimit -s 8912
+```
 
 ## Running Angora
 
@@ -53,38 +67,59 @@ echo core | sudo tee /proc/sys/kernel/core_pattern
 Angora compiles the program into two separate binaries, each with their respective
 instrumentation. Using `autoconf` programs as an example, here are the steps required.
 
+
+```shell
+export ANGORA_DIR=/path/to/angora/bin
+export LLVM_CONFIG=$CLANG_INSTALLATION/bin/llvm-config
 ```
-# Use the instrumenting compilers
-CC=/path/to/angora/bin/angora-clang \
-CXX=/path/to/angora/bin/angora-clang++ \
-LD=/path/to/angora/bin/angora-clang \
-PREFIX=/path/to/target/directory \
-./configure --disable-shared
+
+With angora-clang:
+
+```shell
+# Use the angora compilers
+CC=$ANGORA_DIR/angora-clang CXX=$ANGORA_DIR/angora-clang++ LD=$ANGORA_DIR/angora-clang ./configure --disable-shared
+
+USE_TRACK=1  make -j`nproc`
+mv output_binary output_binary.track
+
+# if you get errors about libc++abi missing, install it:
+sudo apt-get install libc++abi-dev
+
+make clean
+USE_FAST=1  make -j`nproc`
+mv output_binary output_binary.fast
+```
+
+
+If this does not work, use gllvm:
+
+```shell
+# Use the gclang compilers
+CC=$ANGORA_DIR/angora-gclang CXX=$ANGORA_DIR/angora-gclang++ ./configure --disable-shared
+make -j`nproc`
+
+# extract the .bc. This will create binary.bc
+$ANGORA_DIR/angora-get-bc binary
 
 # Build with taint tracking support 
-USE_TRACK=1 make -j
-make install
-
-# Save the compiled target binary into a new directory
-# and rename it with .taint postfix, such as uniq.taint
+USE_TRACK=1 $ANGORA_DIR/angora-clang binary.bc -o binary.track
 
 # Build with light instrumentation support
-make clean
-USE_FAST=1 make -j
-make install
-
-# Save the compiled binary into the directory previously
-# created and rename it with .fast postfix, such as uniq.fast
-
+USE_FAST=1 $ANGORA_DIR/angora-clang binary.bc -o binary.fast
 ```
-
-If you fail to build by this approach, try `wllvm` and `gllvm` described in [Build a target program](./docs/build_target.md#wllvm-or-gllvm).
-
 
 ### Fuzzing
 
+Angora alone:
+
+```shell
+$ANGORA_DIR/fuzzer -i input -o output -t /path/to/binary.track -- /path/to/binary.fast [argv] @@
 ```
-./angora_fuzzer -i input -o output -t path/to/taint/program -- path/to/fast/program [argv]
+
+Angora with AFL:
+```shell
+$ANGORA_DIR/fuzzer -A --sync_afl -i input -o output -t /path/to/binary.track -- /path/to/binary.fast [argv] @@
+/path/to/afl-fuzz -i input -o output -S/M afl_name /path/to/binary.afl [argv] @@
 ```
 
 -----------

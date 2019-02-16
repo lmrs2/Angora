@@ -21,6 +21,7 @@ pub struct ChartStats {
     num_inputs: Counter,
     num_hangs: Counter,
     num_crashes: Counter,
+    num_imports: Counter,
 
     fuzz: FuzzStats,
     search: SearchStats,
@@ -37,6 +38,7 @@ impl ChartStats {
         self.num_rounds.count();
         local.avg_edge_num.sync(&mut self.avg_edge_num);
         local.avg_exec_time.sync(&mut self.avg_exec_time);
+        self.num_imports += local.num_imports;
 
         let st = self.fuzz.get_mut(local.fuzz_type.index());
         st.time += local.start_time.into();
@@ -45,12 +47,13 @@ impl ChartStats {
         st.num_exec += local.num_exec;
         self.num_exec += local.num_exec;
         // if has new
-        st.num_inputs += local.num_inputs;
-        self.num_inputs += local.num_inputs;
+        st.num_inputs += local.num_inputs + local.num_imports;
+        self.num_inputs += local.num_inputs + local.num_imports;
         st.num_hangs += local.num_hangs;
         self.num_hangs += local.num_hangs;
         st.num_crashes += local.num_crashes;
         self.num_crashes += local.num_crashes;
+        
     }
 
     pub fn sync_from_global(&mut self, depot: &Arc<Depot>, gb: &Arc<GlobalBranches>) {
@@ -101,14 +104,19 @@ impl ChartStats {
         self.speed = Average::new(speed, 0);
     }
 
+    pub fn mini_header(&self) -> String {
+        "# time, density, paths, hangs, crashes, imports".to_string()
+    }
+
     pub fn mini_log(&self) -> String {
         format!(
-            "{}, {}, {}, {}, {}",
+            "{}, {}, {}, {}, {}, {}",
             self.init_time.0.elapsed().as_secs(),
             self.density.0,
             self.num_inputs.0,
             self.num_hangs.0,
-            self.num_crashes.0
+            self.num_crashes.0,
+            self.num_imports.0
         )
     }
 }
@@ -137,7 +145,7 @@ impl fmt::Display for ChartStats {
   COVERAGE |    EDGE: {},   DENSITY: {}%
     EXECS  |   TOTAL: {},     ROUND: {},     MAX_R: {}
     SPEED  |  PERIOD: {:6}r/s    TIME: {}us, 
-    FOUND  |    PATH: {},     HANGS: {},   CRASHES: {}
+    FOUND  |    PATH: {},     HANGS: {},   CRASHES: {},   IMPORTS: {}
 {}
 {}
 {}
@@ -160,6 +168,7 @@ impl fmt::Display for ChartStats {
             self.num_inputs,
             self.num_hangs,
             self.num_crashes,
+            self.num_imports,
             " -- FUZZ -- ".blue().bold(),
             self.fuzz,
             " -- SEARCH -- ".blue().bold(),

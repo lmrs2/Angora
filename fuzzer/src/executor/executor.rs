@@ -229,8 +229,8 @@ impl Executor {
             self.has_new_path = true;
             self.local_stats.find_new(&status);
             let id = self.depot.save(status, &buf, cmpid);
-
-            if status == StatusType::Normal {
+            
+            if status == StatusType::Normal || status == StatusType::Import {
                 self.local_stats.avg_edge_num.update(edge_num as f32);
                 let speed = self.count_time();
                 let speed_ratio = self.local_stats.avg_exec_time.get_ratio(speed as f32);
@@ -268,10 +268,21 @@ impl Executor {
         self.check_timeout(status, cond)
     }
 
-    pub fn run_sync(&mut self, buf: &Vec<u8>) {
+    pub fn run_sync(&mut self, buf: &Vec<u8>, is_afl: bool) {
         self.run_init();
         let status = self.run_inner(buf);
-        self.do_if_has_new(buf, status, false, 0);
+        
+        // if normal run, then change value to the corresponding type (import or seed)
+        let import_status = if is_afl {
+            match status {
+                StatusType::Normal => StatusType::Import,
+                _ => status,
+            }
+        } else {
+            status
+        };
+
+        self.do_if_has_new(buf, import_status, false, 0);
     }
 
     fn run_init(&mut self) {

@@ -25,7 +25,7 @@ pub fn sync_depot(executor: &mut Executor, running: Arc<AtomicBool>, dir: &Path)
                     fs::metadata(path).expect("Could not fetch metadata.").len() as usize;
                 if file_len < config::MAX_INPUT_LEN {
                     let buf = read_from_file(path);
-                    executor.run_sync(&buf);
+                    executor.run_sync(&buf, false);
                 }
             }
         }
@@ -63,7 +63,7 @@ pub fn sync_afl(
         }
     }
 
-    let n: usize = executor.local_stats.num_inputs.into();
+    let n: usize = executor.local_stats.num_imports.into();
     info!("sync {} file from AFL.", n);
 
     executor.update_log_and_clear();
@@ -106,7 +106,7 @@ fn sync_one_afl_dir(
                         let file_len = fs::metadata(path).unwrap().len() as usize;
                         if file_len < config::MAX_INPUT_LEN {
                             let buf = read_from_file(path);
-                            executor.run_sync(&buf);
+                            executor.run_sync(&buf, true);
                         }
                         if id > max_id {
                             max_id = id;

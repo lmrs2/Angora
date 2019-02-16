@@ -3,9 +3,9 @@ CC         = clang
 CXX        = `$(LLVM_CONFIG) --bindir`/clang++
 AR         = ar
 LLVM_CONFIG ?= ${LLVM_DIR}llvm-config
-CXXFLAGS    += -std=c++14 -Wall -fpic -O3 -g
+CXXFLAGS    += -std=c++14 -Wall -funroll-loops -O3 -Wall -D_FORTIFY_SOURCE=2 -g -Wno-pointer-sign -Wno-variadic-macros -fno-rtti -fpic
 
-CLANG_CFL    = `$(LLVM_CONFIG) --cxxflags` -funroll-loops -O3 -Wall -D_FORTIFY_SOURCE=2 -g -Wno-pointer-sign -Wno-variadic-macros -fno-rtti -fpic
+CLANG_CFL    = `$(LLVM_CONFIG) --cxxflags` 
 
 CLANG_LFL    = `$(LLVM_CONFIG) --ldflags` $(LDFLAGS)
 
@@ -49,16 +49,16 @@ ${PREFIX}/DFSanRT.a: ${RT_OBJECTS} ${SAN_OBJECTS} ${INT_OBJECTS} ${SAN_ASM_OBJEC
 	$(AR) r $@ ${RT_OBJECTS} ${SAN_OBJECTS} ${INT_OBJECTS} ${SAN_ASM_OBJECT} #../../tag_set/tag_set.o
 
 ./sanitizer_common/%.o : ./sanitizer_common/%.cc
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CLANG_CFL) $< -o $@
 
 ./interception/%.o : ./interception/%.cc
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CLANG_CFL) $< -o $@
 
 ./rt/%.o : ./rt/%.cc
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CLANG_CFL) $< -o $@
 
 ${SAN_ASM_OBJECT} : ${SAN_ASM_SOURCE}
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CLANG_CFL) $< -o $@
 
 ${PREFIX}/DFSanPass.so: ./pass/DFSanPass.cc
 	$(CXX) $(CLANG_CFL) -shared $< -o $@ $(CLANG_LFL)
